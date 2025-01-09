@@ -46,15 +46,25 @@ def get_latest_data_grouped_by_district():
     # 구별로 데이터 그룹화
     grouped_data = {}
     for row in data:
-        sgg_cd = row[9]  # sggCd (구 코드)
+        sgg_cd = row[10]  # sggCd (구 코드) - 인덱스 10이 sggCd 컬럼인지 확인 필요!
         if sgg_cd not in grouped_data:
             grouped_data[sgg_cd] = []
+            print(f"새로운 구 코드: {sgg_cd}") # 새로운 sgg_cd를 만날 때마다 출력
         grouped_data[sgg_cd].append(row)
+
+    # 누락된 구 코드 확인 및 district_mapping 업데이트 (이 부분은 유지)
+    for district_code in grouped_data.keys():
+        if district_code not in district_mapping:
+            print(f"Warning: '{district_code}' 구 코드가 district_mapping에 없습니다. 추가합니다.")
+            district_mapping[district_code] = f'알 수 없는 구 ({district_code})'
+
+    print(f"grouped_data: {grouped_data}") # grouped_data 전체 출력
     return grouped_data
 
 @app.route('/')
 def index():
     grouped_data = get_latest_data_grouped_by_district()
+    print(grouped_data.keys()) # grouped_data의 키를 콘솔에 출력
     return render_template('index.html', grouped_data=grouped_data, district_mapping=district_mapping)
 
 if __name__ == '__main__':
