@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>부동산 실거래가 (MVP)</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            cursor: pointer;
+        }
+        .hidden-row {
+            display: none;
+        }
+        .filterable {
+            cursor: pointer; /* 클릭 가능한 스타일 */
+        }
+    </style>
+</head>
+<body>
+    <h1>부동산 실거래가 (오늘 업데이트)</h1>
+
+    {% for district_code, district_data in grouped_data.items() %}
+        <h2>{{ district_mapping[district_code] }}</h2>
+        <table class="realEstateTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(this, 0)">동</th>
+                    <th onclick="sortTable(this, 1)">아파트</th>
+                    <th onclick="sortTable(this, 2)">건축년도</th>
+                    <th onclick="sortTable(this, 3)">거래금액</th>
+                    <th>거래일</th>
+                    <th onclick="sortTable(this, 5)">전용면적</th>
+                    <th onclick="sortTable(this, 6)">층</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in district_data %}
+                <tr>
+                    <td class="filterable" data-value="{{ row[11] }}" data-column="dong">{{ row[11] }}</td>
+                    <td class="filterable" data-value="{{ row[2] }}" data-column="aptNm">{{ row[2] }}</td>
+                    <td class="filterable" data-value="{{ row[3] }}" data-column="buildYear">{{ row[3] }}</td>
+                    <td class="filterable" data-value="{{ row[4] }}만원" data-column="dealAmount">{{ row[4] }}만원</td>
+                    <td class="filterable" data-value="{% if row[7] and row[6] and row[5] %}{{ "%04d-%02d-%02d" % (row[7], row[6], row[5]) }}{% endif %}" data-column="dealDate">
+                        {% if row[7] and row[6] and row[5] %}
+                            {{ "%04d-%02d-%02d" % (row[7], row[6], row[5]) }}
+                        {% endif %}
+                    </td>
+                    <td class="filterable" data-value="{{ row[8] }}" data-column="excluUseAr">{{ row[8] }}</td>
+                    <td class="filterable" data-value="{{ row[9] }}" data-column="floor">{{ row[9] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+
+    <script>
+        const sortOrders = {};
+
+        function sortTable(th, n) {
+            const table = th.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const order = sortOrders[n] || 'none';
+
+            if (order === 'none') {
+                sortOrders[n] = 'asc';
+            } else if (order === 'asc') {
+                sortOrders[n] = 'desc';
+            } else {
+                sortOrders[n] = 'none';
+            }
+
+            rows.sort((a, b) => {
+                const aValue = a.children[n].textContent;
+                const bValue = b.children[n].textContent;
+
+                if (sortOrders[n] === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else if (sortOrders[n] === 'desc') {
+                    return bValue.localeCompare(aValue);
+                } else {
+                    return 0;
+                }
+            });
+
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        let currentlyFilteredValue = null;
+        let currentlyFilteredColumn = null;
+        let currentlyFilteredTable = null;
+
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('filterable')) {
+                const cellValue = event.target.dataset.value;
+                const columnName = event.target.dataset.column;
+                const table = event.target.closest('table');
+                const rows = table.querySelectorAll('tbody tr');
+
+                if (currentlyFilteredValue === cellValue && currentlyFilteredColumn === columnName && currentlyFilteredTable === table) {
+                    // 필터 해제
+                    rows.forEach(row => row.classList.remove('hidden-row'));
+                    currentlyFilteredValue = null;
+                    currentlyFilteredColumn = null;
+                    currentlyFilteredTable = null;
+                } else {
+                    // 필터 적용
+                    rows.forEach(row => {
+                        const cell = row.querySelector(`td[data-column="${columnName}"]`);
+                        const cellText = cell ? cell.dataset.value : null;
+                        row.classList.toggle('hidden-row', cellText !== cellValue);
+                    });
+                    currentlyFilteredValue = cellValue;
+                    currentlyFilteredColumn = columnName;
+                    currentlyFilteredTable = table;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
